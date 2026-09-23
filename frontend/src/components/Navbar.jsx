@@ -1,7 +1,13 @@
 import React from 'react';
-import { ShieldAlert, Train, Activity, Settings2 } from 'lucide-react';
+import { Train, Activity, Settings2, FileCode2, HelpCircle } from 'lucide-react';
 
-export default function Navbar({ policyMode, onPolicyChange, taskCount }) {
+export default function Navbar({
+  policyMode,
+  onPolicyChange,
+  taskCount,
+  onOpenContracts,
+  onOpenQA,
+}) {
   return (
     <header className="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md px-6 py-3.5">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
@@ -22,17 +28,23 @@ export default function Navbar({ policyMode, onPolicyChange, taskCount }) {
           </div>
         </div>
 
-        {/* Corridor & Active Stats */}
-        <div className="hidden md:flex items-center space-x-6 text-xs text-slate-300">
-          <div className="flex items-center space-x-1.5 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
-            <span className="text-slate-400">Corridor:</span>
-            <span className="font-semibold text-emerald-400">C-01 (KM 100 - 160)</span>
-          </div>
-          <div className="flex items-center space-x-1.5 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
-            <Activity className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
-            <span className="text-slate-400">Active Tasks:</span>
-            <span className="font-semibold text-white">{taskCount}</span>
-          </div>
+        {/* Quick Modal Actions */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={onOpenContracts}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-blue-300 border border-slate-700 transition-colors"
+          >
+            <FileCode2 className="w-3.5 h-3.5 text-blue-400" />
+            <span>Data Contracts (Gate 0)</span>
+          </button>
+
+          <button
+            onClick={onOpenQA}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-purple-300 border border-slate-700 transition-colors"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-purple-400" />
+            <span>Q&A Guide (§13)</span>
+          </button>
         </div>
 
         {/* Policy Mode Selector */}

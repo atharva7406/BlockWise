@@ -1,18 +1,100 @@
 """
-Synthetic Dataset Generator for PS-27 Automatic Block Planning Prototype
-Generates realistic, messy railway maintenance records for corridor C-01 (KM 100 to 160).
-Includes cross-department tasks (ENGG, S&T, OHE), multi-vocabulary chainage references,
-bundling candidates, isolation/resource collisions, stale syncs, and quarantined records.
+Synthetic Dataset Generator for PS-27 Automatic Block Planning Prototype (Blueprint §5 & §6).
+Generates realistic canonical data across all 6 core entities:
+1. SourceMetadata
+2. Asset
+3. MaintenanceTask
+4. Train
+5. BlockWindow
+6. TopologyMap
+Includes multi-department tasks, 3 vocabularies (Track Section, OHE Elementary Section, Interlocking Group),
+point vs range assets, unit conversions, bundling pairs, isolation conflicts, stale telemetry, and quarantine cases.
 """
 
-from typing import List
-from ..models.schema import MaintenanceTask, SourceMetadata
+from typing import List, Dict, Any
+from ..models.schema import (
+    MaintenanceTask,
+    SourceMetadata,
+    Asset,
+    Train,
+    BlockWindow,
+    TopologyMap,
+)
 from ..models.enums import Department, Severity, BlockType, SourceMode, HealthState
 
 
+def generate_canonical_topology_map() -> TopologyMap:
+    """
+    Corridor C-01 Topology Map (Blueprint §6):
+    Normalizes 3 distinct operational railway vocabularies to unified KM chainage:
+    - Track Engineering: Track Sections (TRK-SEC)
+    - Signals & Telecom: Interlocking Groups & Signals (INT-GRP, SIG)
+    - Traction/Electrical: OHE Elementary Sections (OHE-ELEC)
+    """
+    return TopologyMap(
+        corridor_id="C-01",
+        corridor_name="Northern Heavy Trunk Line (KM 100.0 - 160.0)",
+        km_start=100.0,
+        km_end=160.0,
+        track_sections={
+            "TRK-SEC-12": {"km_from": 102.0, "km_to": 103.5},
+            "TRK-SEC-28B": {"km_from": 115.0, "km_to": 118.0},
+            "TRK-SEC-33A": {"km_from": 128.5, "km_to": 131.0},
+            "TRK-SEC-42A": {"km_from": 140.0, "km_to": 141.5},
+            "TRK-SEC-55C": {"km_from": 152.0, "km_to": 155.0},
+            "TRK-SEC-58": {"km_from": 158.0, "km_to": 160.0},
+        },
+        interlocking_groups={
+            "INT-GRP-08": 105.4,
+            "SIG-S19": 122.3,
+            "SIG-S42": 140.7,
+            "SIG-S88": 156.2,
+        },
+        ohe_elementary_sections={
+            "OHE-ELEC-115": {"km_from": 115.0, "km_to": 118.0},
+            "OHE-ELEC-129": {"km_from": 128.5, "km_to": 131.0},
+            "OHE-ELEC-148": {"km_from": 147.0, "km_to": 150.0},
+        },
+    )
+
+
+def generate_canonical_assets() -> List[Asset]:
+    """Generates canonical railway assets residing along Corridor C-01."""
+    return [
+        Asset(asset_id="TRK-SEC-12", department=Department.ENGG, asset_type="track_section", km_from=102.0, km_to=103.5, status="DEGRADED", last_inspected="2026-09-01"),
+        Asset(asset_id="INT-GRP-08", department=Department.SNT, asset_type="interlocking_point", km_from=105.4, km_to=105.4, status="OPERATIONAL", last_inspected="2026-09-10"),
+        Asset(asset_id="OHE-ELEC-115", department=Department.OHE, asset_type="catenary_wire", km_from=115.0, km_to=118.0, status="OPERATIONAL", last_inspected="2026-09-12"),
+        Asset(asset_id="TRK-SEC-28B", department=Department.ENGG, asset_type="track_section", km_from=115.2, km_to=117.8, status="OPERATIONAL", last_inspected="2026-09-05"),
+        Asset(asset_id="SIG-S19", department=Department.SNT, asset_type="color_light_signal", km_from=122.3, km_to=122.3, status="DEGRADED", last_inspected="2026-09-08"),
+        Asset(asset_id="OHE-ELEC-129", department=Department.OHE, asset_type="tension_regulator", km_from=128.5, km_to=131.0, status="DEGRADED", last_inspected="2026-08-28"),
+        Asset(asset_id="TRK-SEC-33A", department=Department.ENGG, asset_type="welded_joint", km_from=129.0, km_to=130.5, status="DEGRADED", last_inspected="2026-09-03"),
+        Asset(asset_id="TRK-SEC-42A", department=Department.ENGG, asset_type="track_section", km_from=140.0, km_to=141.5, status="DEGRADED", last_inspected="2026-09-02"),
+        Asset(asset_id="SIG-S42", department=Department.SNT, asset_type="auto_signal", km_from=140.7, km_to=140.7, status="DEGRADED", last_inspected="2026-09-14"),
+        Asset(asset_id="OHE-ELEC-148", department=Department.OHE, asset_type="insulator_bank", km_from=147.0, km_to=150.0, status="OPERATIONAL", last_inspected="2026-09-15"),
+        Asset(asset_id="TRK-SEC-55C", department=Department.OPTG, asset_type="speed_board", km_from=152.0, km_to=155.0, status="OPERATIONAL", last_inspected="2026-09-11"),
+        Asset(asset_id="TRK-SEC-58", department=Department.ENGG, asset_type="ballast_bed", km_from=158.0, km_to=159.8, status="OPERATIONAL", last_inspected="2026-09-16"),
+    ]
+
+
+def generate_canonical_trains() -> List[Train]:
+    """Generates scheduled train timetable profiles running on Corridor C-01."""
+    return [
+        Train(train_no="22436", train_name="Vande Bharat Express", train_type="VANDE_BHARAT", corridor="C-01", origin="NDLS", destination="BSB", scheduled_departure="06:00", scheduled_arrival="07:15", priority_level=1, speed_restriction_sensitive=True),
+        Train(train_no="12302", train_name="Rajdhani Express", train_type="RAJDHANI", corridor="C-01", origin="NDLS", destination="HWH", scheduled_departure="16:50", scheduled_arrival="18:10", priority_level=1, speed_restriction_sensitive=True),
+        Train(train_no="12424", train_name="Dibrugarh Rajdhani", train_type="RAJDHANI", corridor="C-01", origin="NDLS", destination="DBRG", scheduled_departure="20:30", scheduled_arrival="22:00", priority_level=1, speed_restriction_sensitive=True),
+        Train(train_no="12876", train_name="Neelachal Superfast", train_type="EXPRESS", corridor="C-01", origin="ANVT", destination="PURI", scheduled_departure="07:30", scheduled_arrival="09:15", priority_level=2, speed_restriction_sensitive=False),
+        Train(train_no="BTPN-902", train_name="POL Petroleum Freight Rake", train_type="FREIGHT", corridor="C-01", origin="IOC-SIDING", destination="DIV-YARD", scheduled_departure="01:15", scheduled_arrival="04:00", priority_level=4, speed_restriction_sensitive=False),
+        Train(train_no="BOXN-441", train_name="Coal Rake Freight Special", train_type="FREIGHT", corridor="C-01", origin="COAL-DEPOT", destination="THERMAL-PWR", scheduled_departure="02:00", scheduled_arrival="05:30", priority_level=4, speed_restriction_sensitive=False),
+    ]
+
+
 def generate_synthetic_tasks() -> List[MaintenanceTask]:
+    """
+    Generates 13 multi-department maintenance tasks across Corridor C-01.
+    All tagged mode: synthetic (Blueprint §6).
+    """
     tasks = [
-        # Bundle Pair 1: ENGG + S&T (Overlapping at KM 140-141.5, compatible)
+        # Bundle Candidate Pair 1: ENGG + S&T (KM 140.0 - 141.5, compatible)
         MaintenanceTask(
             task_id="ENG-101",
             department=Department.ENGG,
@@ -50,7 +132,7 @@ def generate_synthetic_tasks() -> List[MaintenanceTask]:
             source_meta=SourceMetadata(source="TDMS", mode=SourceMode.SYNTHETIC, last_sync="14:32", confidence=0.94),
         ),
 
-        # Bundle Pair 2: OHE + ENGG (Overlapping at KM 115-118, compatible for integrated block)
+        # Bundle Candidate Pair 2: OHE + ENGG (KM 115.0 - 118.0, integrated block compatible)
         MaintenanceTask(
             task_id="OHE-301",
             department=Department.OHE,
@@ -84,12 +166,11 @@ def generate_synthetic_tasks() -> List[MaintenanceTask]:
             crew=["ENGG-CREW-2"],
             equipment=["HAND-GAUGE"],
             depends_on=[],
-            isolation_required=True,  # Power isolation compatible
+            isolation_required=True,
             source_meta=SourceMetadata(source="TMS", mode=SourceMode.SYNTHETIC, last_sync="14:25", confidence=0.90),
         ),
 
-        # Spatial overlap but ISOLATION / RESOURCE CONFLICT (REJECTED BUNDLE DEMO BEAT)
-        # OHE requires 25kV power cut, but welding requires live heavy machinery / conflicting track occupancy
+        # Overlapping Spatially but REJECTED BUNDLE (Isolation / Resource Collision Demo Beat)
         MaintenanceTask(
             task_id="OHE-302",
             department=Department.OHE,
@@ -121,13 +202,13 @@ def generate_synthetic_tasks() -> List[MaintenanceTask]:
             est_duration_min=120,
             block_type=BlockType.TRAFFIC_BLOCK,
             crew=["ENGG-CREW-HEAVY"],
-            equipment=["CRANE-X1"],  # RESOURCE COLLISION (Same crane needed)
+            equipment=["CRANE-X1"],  # Collision on machinery
             depends_on=[],
-            isolation_required=False, # ISOLATION CONFLICT
+            isolation_required=False, # Conflict on power isolation
             source_meta=SourceMetadata(source="TMS", mode=SourceMode.SYNTHETIC, last_sync="14:10", confidence=0.88),
         ),
 
-        # Stale record edge case (last sync hours ago -> reduced confidence & STALE flag)
+        # Stale record edge case (reduced confidence)
         MaintenanceTask(
             task_id="SNT-202",
             department=Department.SNT,
@@ -149,7 +230,7 @@ def generate_synthetic_tasks() -> List[MaintenanceTask]:
             health_reason="Last TDMS sync > 8 hours ago",
         ),
 
-        # Conflicted record edge case (TMS says occupied, COA says clear)
+        # Conflicted record edge case
         MaintenanceTask(
             task_id="OPT-401",
             department=Department.OPTG,
@@ -171,7 +252,7 @@ def generate_synthetic_tasks() -> List[MaintenanceTask]:
             health_reason="TMS track circuit reports active freight movement; COA reports idle",
         ),
 
-        # Quarantined record (missing asset / illegal KM range -> never scheduled)
+        # Quarantined record (illegal KM chainage -> Gate 0 Quarantine)
         MaintenanceTask(
             task_id="ENG-999",
             department=Department.ENGG,
@@ -190,10 +271,10 @@ def generate_synthetic_tasks() -> List[MaintenanceTask]:
             isolation_required=False,
             source_meta=SourceMetadata(source="TMS", mode=SourceMode.SYNTHETIC, last_sync="14:33", confidence=0.10),
             health_state=HealthState.QUARANTINED,
-            health_reason="Negative KM chainage coordinates & missing equipment crew list",
+            health_reason="Gate 0 violation: negative KM chainage coordinates & missing equipment crew list",
         ),
 
-        # Critical overdue tasks for high priority ranking
+        # Additional tasks for priority ranking spread
         MaintenanceTask(
             task_id="ENG-104",
             department=Department.ENGG,

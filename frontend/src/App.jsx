@@ -7,6 +7,8 @@ import BundleView from './components/BundleView';
 import ScheduleGanttView from './components/ScheduleGanttView';
 import PriorityBreakdownView from './components/PriorityBreakdownView';
 import OfficerActionModal from './components/OfficerActionModal';
+import CanonicalContractsModal from './components/CanonicalContractsModal';
+import HonestyPointsModal from './components/HonestyPointsModal';
 import {
   fetchTasks,
   setPolicyMode,
@@ -29,12 +31,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("topology"); // topology, tasks, bundles, schedule
   const [selectedTask, setSelectedTask] = useState(null);
   const [actionBlock, setActionBlock] = useState(null);
+  const [showContractsModal, setShowContractsModal] = useState(false);
+  const [showQAModal, setShowQAModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
 
   const showNotification = (msg, type = "info") => {
     setNotification({ msg, type });
-    setTimeout(() => setNotification(null), 4500);
+    setTimeout(() => setNotification(null), 5000);
   };
 
   const loadData = async () => {
@@ -77,7 +81,7 @@ export default function App() {
       const res = await triggerEmergency();
       await loadData();
       setActiveTab("schedule");
-      showNotification(`EMERGENCY INJECTED: Broken rail task ${res.task.task_id} prioritized and CP-SAT re-solved!`, "emergency");
+      showNotification(`EMERGENCY INJECTED: Broken rail task ${res.task.task_id} prioritized. Already-approved blocks stayed FROZEN!`, "emergency");
     } catch (err) {
       console.error(err);
     } finally {
@@ -107,7 +111,7 @@ export default function App() {
       setLoading(true);
       const res = await solveSchedule();
       setScheduleData(res);
-      showNotification(`CP-SAT Solved: ${res.stats.scheduled_count} tasks assigned (${res.stats.bundled_count} bundled).`, "success");
+      showNotification(`CP-SAT Solved: ${res.stats.scheduled_count} tasks assigned (${res.stats.bundled_count} bundled, ${res.stats.frozen_count || 0} frozen).`, "success");
     } catch (err) {
       console.error(err);
     } finally {
@@ -133,7 +137,7 @@ export default function App() {
     try {
       await submitOfficerAction(payload);
       await loadData();
-      showNotification(`Statutory block order recorded: ${payload.action} for ${payload.task_id}.`, "success");
+      showNotification(`Statutory block order recorded: ${payload.action} for ${payload.task_id}. Block is now LOCKED/FROZEN.`, "success");
     } catch (err) {
       console.error(err);
     }
@@ -146,6 +150,8 @@ export default function App() {
         policyMode={policyMode}
         onPolicyChange={handlePolicyChange}
         taskCount={tasks.length}
+        onOpenContracts={() => setShowContractsModal(true)}
+        onOpenQA={() => setShowQAModal(true)}
       />
 
       {/* Live Demo Controller */}
@@ -283,6 +289,16 @@ export default function App() {
           onClose={() => setActionBlock(null)}
           onSubmit={handleOfficerSubmit}
         />
+      )}
+
+      {/* Canonical Contracts Modal */}
+      {showContractsModal && (
+        <CanonicalContractsModal onClose={() => setShowContractsModal(false)} />
+      )}
+
+      {/* Honesty Points & Q&A Modal */}
+      {showQAModal && (
+        <HonestyPointsModal onClose={() => setShowQAModal(false)} />
       )}
     </div>
   );

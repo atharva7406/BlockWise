@@ -2,7 +2,7 @@
 
 > **ML predicts → deterministic rules validate → CP-SAT proves feasibility → the officer decides → reality feeds learning.**
 
-This repository contains the prototype build for **PS-27 / SIH26027: Automatic Maintenance Block Planning and Auto-Shadow Bundling**, structured according to [PS27_Prototype_Blueprint.md](file:///c:/Users/pmata/Desktop/hackathon/NationalSIH26/PS27_Prototype_Blueprint.md).
+This repository contains the prototype build for **PS-27 / SIH26027: Automatic Maintenance Block Planning and Auto-Shadow Bundling**, aligned with [PS27_Prototype_Blueprint_updated.md](file:///c:/Users/pmata/Desktop/hackathon/NationalSIH26/PS27_Prototype_Blueprint_updated.md) and the team's Technology Stack Report.
 
 ---
 
@@ -12,10 +12,13 @@ This repository contains the prototype build for **PS-27 / SIH26027: Automatic M
 [Synthetic Data Generator] ──► 15-25 realistic multi-department records (C-01 corridor)
         │
         ▼
+[Gate 0 Schema Validation] ──► Pydantic v2 strict contract validation; schema-invalid -> QUARANTINED
+        │
+        ▼
 [Data Health Gate] ─────────► VALID / STALE / CONFLICTED / QUARANTINED state machine
         │
         ▼
-[Topology Resolver] ────────► KM chainage normalization & spatial overlap detection
+[Topology Resolver] ────────► Pandas-powered KM chainage overlap joins & vocabulary normalization
         │
         ▼
 [Priority Engine] ──────────► Transparent R, I, T formula + policy modes (Safety/Balanced/Throughput)
@@ -24,100 +27,67 @@ This repository contains the prototype build for **PS-27 / SIH26027: Automatic M
 [Auto-Shadow Gate] ─────────► Deterministic candidate bundling (WHY BUNDLE vs WHY NOT reason codes)
         │
         ▼
-[CP-SAT Scheduler] ─────────► Google OR-Tools constraint satisfaction weekly block allocation
+[CP-SAT Scheduler] ─────────► Google OR-Tools (Seed 42) + Frozen Block Preservation for approved work
         │
         ▼
 [Officer Console] ──────────► React UI with Approve / Override statutory decision logging
+        │
+        ▼
+[Relational DB & Audit] ────► PostgreSQL/SQLite with JSONB exact audit replay + Synthetic-in-Prod DB constraint
 ```
 
 ---
 
-## Directory Structure
+## 6 Canonical Entities (Pydantic v2)
 
-```text
-NationalSIH26/
-├── PS27_Prototype_Blueprint.md     # Architecture & build blueprint
-├── README.md                       # Setup and run instructions
-├── run_backend.bat                 # Fast one-click launch for FastAPI
-├── run_frontend.bat                # Fast one-click launch for Vite React UI
-├── backend/
-│   ├── requirements.txt            # FastAPI, OR-Tools, Pandas, Pydantic
-│   ├── venv/                       # Python 3.12 virtual environment
-│   ├── main.py                     # FastAPI entrypoint with CORS & API routers
-│   └── app/
-│       ├── models/
-│       │   ├── enums.py            # Department, HealthState, PolicyMode, ReasonCode
-│       │   └── schema.py           # Canonical data models (Task, Window, ScheduledBlock)
-│       ├── core/
-│       │   ├── health_gate.py      # Data Health Gate state machine
-│       │   ├── topology.py         # KM chainage resolver & spatial overlap
-│       │   ├── priority.py         # Transparent R, I, T formula & policy weighting
-│       │   ├── bundler.py          # Auto-Shadow Bundling Gate & reason codes
-│       │   └── scheduler.py        # Google OR-Tools CP-SAT constraint scheduler
-│       ├── generator/
-│       │   └── synthetic_data.py   # Realistic synthetic corridor C-01 dataset
-│       ├── api/
-│       │   ├── routes_tasks.py     # Task registry & policy mode switching
-│       │   ├── routes_bundles.py   # Auto-shadow bundling evaluations
-│       │   ├── routes_schedule.py  # CP-SAT solve & officer review endpoints
-│       │   └── routes_demo.py      # Emergency injection & TDMS stale simulation
-│       └── services/
-│           └── block_planner.py    # Master service orchestrator
-└── frontend/
-    ├── package.json                # React 19, Vite, Tailwind, Lucide, Recharts
-    ├── vite.config.js              # Vite + Tailwind CSS plugin
-    └── src/
-        ├── App.jsx                 # Master application layout & navigation
-        ├── components/
-        │   ├── Navbar.jsx          # Brand, corridor selector & policy mode toggle
-        │   ├── DemoControlBar.jsx  # Live demo controls (emergency, stale simulation)
-        │   ├── TopologyView.jsx    # Visual KM chainage timeline with stacked tracks
-        │   ├── TaskListView.jsx    # Health state filtering (VALID/STALE/CONFLICTED/QUARANTINED)
-        │   ├── PriorityBreakdownView.jsx # Transparent R, I, T metrics & separate confidence
-        │   ├── BundleView.jsx      # WHY BUNDLE vs WHY NOT reason codes
-        │   ├── ScheduleGanttView.jsx # CP-SAT weekly timetable schedule
-        │   └── OfficerActionModal.jsx # Statutory human officer sign-off & reason log
-        └── services/
-            └── api.js              # REST client for backend communication
-```
+1. **`SourceMetadata`**: 3-mode tagging (`API`, `export`, `synthetic`), source identifier (`TMS`, `SMMS`, `TDMS`, `COA`), timestamp, and confidence score.
+2. **`Asset`**: Physical infrastructure asset registry (track sections, color-light signals, point machines, OHE elementary sections) mapped to corridor chainage.
+3. **`MaintenanceTask`**: Work demand record with department, chainage, work type, duration, crews, equipment, dependencies, and isolation requirement.
+4. **`Train`**: Timetable train services (Vande Bharat, Rajdhani, Express, Freight) with speed-restriction sensitivities.
+5. **`BlockWindow`**: Timetable slots provided by COA with affected tracks and duration limits.
+6. **`TopologyMap`**: Corridor C-01 mapping normalizing 3 distinct departmental vocabularies (Track Sections, Interlocking Groups, OHE Elementary Sections) to unified KM chainage.
+
+---
+
+## Technology Stack Safeguards
+
+- **Gate 0 Validation**: Any incoming record that fails Pydantic schema validation is automatically quarantined before reaching scoring.
+- **Production Mode Safeguard**: Database check constraint `CHECK (is_production = FALSE OR mode != 'synthetic')` permanently prevents test/synthetic records from being marked schedulable in production.
+- **Audit Replay**: Normalized relational tables store every attribute while preserving the exact raw JSON/JSONB payload for non-repudiation.
+- **Frozen-Block Preservation**: When an emergency broken rail is injected mid-demo, already approved blocks remain strictly locked in their assigned windows (`x[task_id, original_win] == 1`), while forward windows adapt dynamically.
+- **Mathematical Safety Guarantee**: Hard safety constraints (isolation, spatial collisions, equipment capacity) live exclusively outside the scoring layer in deterministic gates and CP-SAT.
 
 ---
 
 ## Quick Start Instructions
 
-### 1. Launch Backend API
-Open a terminal in the project root:
-```powershell
-.\run_backend.bat
-```
-*(Or directly activate virtual environment and start uvicorn:)*
-```powershell
-cd backend
-.\venv\Scripts\activate
-uvicorn main:app --reload --port 8000
-```
-- API Documentation (Swagger): `http://localhost:8000/docs`
-- Healthcheck: `http://localhost:8000/health`
+### Option 1: Native Local Run (Zero Setup)
+1. **Backend**:
+   ```powershell
+   .\run_backend.bat
+   ```
+   API runs on `http://localhost:8000` (OpenAPI Swagger at `/docs`).
+2. **Frontend**:
+   ```powershell
+   .\run_frontend.bat
+   ```
+   UI runs on `http://localhost:5173`.
 
-### 2. Launch Frontend Console
-Open a second terminal in the project root:
-```powershell
-.\run_frontend.bat
+### Option 2: Docker Compose (Full Stack)
+```bash
+docker-compose up --build
 ```
-*(Or directly run npm dev inside frontend:)*
-```powershell
-cd frontend
-npm run dev
-```
-- Frontend UI: `http://localhost:5173`
+Spins up:
+- `db`: PostgreSQL 16 on port 5432
+- `backend`: FastAPI with Google OR-Tools on port 8000
+- `frontend`: React Vite bundle served by Nginx on port 5173
 
 ---
 
-## Key Features & Demo Beats
+## Live Demo Highlights
 
-1. **Deterministic Auto-Shadow Bundling**: Outputs both **WHY BUNDLE** (with saved corridor minutes) and **WHY NOT** (explicit reason codes like `RESOURCE_COLLISION`, `ISOLATION_CONFLICT`, `NO_SPATIAL_OVERLAP`).
-2. **Transparent Priority vs. Confidence**: Computes $R$ (Risk), $I$ (Impact), and $T$ (Time pressure) indicators based on selectable policy modes (*Safety-First*, *Balanced*, *Throughput-First*). Never multiplies Priority $\times$ Confidence.
-3. **Data Health Gate**: Handles edge cases gracefully by classifying records as `VALID`, `STALE`, `CONFLICTED`, or `QUARANTINED`.
-4. **Google OR-Tools CP-SAT Engine**: Provably optimal block allocation respecting non-overlapping corridor windows, machine constraints, and bundled task slots.
-5. **Human-in-the-Loop Statutory Officer Console**: Zero autonomous block issuance; every block decision requires a human operating officer review with mandatory justification logging.
-6. **Live Demo Triggers**: "Simulate Rail Fracture (Emergency Injection)" and "Toggle TDMS Telemetry Outage (Stale Data)" buttons for live judge presentations.
+1. **Topology & Chainage Overlaps**: Stacked track view for ENGG, S&T, and OHE showing point signals vs range assets.
+2. **Auto-Shadow Bundling Gate**: Evaluates candidate pairs and provides explicit **WHY BUNDLE** (with saved corridor minutes) and **WHY NOT** (`RESOURCE_COLLISION`, `ISOLATION_CONFLICT`, `NO_SPATIAL_OVERLAP`).
+3. **Emergency Injection & Frozen Blocks**: Click "Simulate Rail Fracture" to inject an emergency event. Watch already-approved blocks stay `LOCKED / FROZEN` while unapproved blocks re-optimize forward.
+4. **Data Contracts Modal**: Click "Data Contracts (Gate 0)" in the navbar to inspect all 6 canonical entity schemas and the DB check constraint.
+5. **Judge Q&A Guide**: Click "Q&A Guide (§13)" in the navbar to view transparent, defensible talking points for judge presentations.

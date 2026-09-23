@@ -4,11 +4,13 @@ from app.api.routes_tasks import router as tasks_router
 from app.api.routes_bundles import router as bundles_router
 from app.api.routes_schedule import router as schedule_router
 from app.api.routes_demo import router as demo_router
+from app.api.routes_contracts import router as contracts_router
+from app.db.database import init_db
 
 app = FastAPI(
     title="PS-27 Automatic Block Planning API",
     description="Intelligent Railway Maintenance Block Planning & Auto-Shadow Bundling Engine (SIH26027)",
-    version="1.0.0",
+    version="2.0.0",
 )
 
 # Enable CORS for Vite frontend
@@ -25,6 +27,12 @@ app.include_router(tasks_router)
 app.include_router(bundles_router)
 app.include_router(schedule_router)
 app.include_router(demo_router)
+app.include_router(contracts_router)
+
+
+@app.on_event("startup")
+def startup_event():
+    init_db()
 
 
 @app.get("/health")
@@ -32,7 +40,10 @@ def health_check():
     return {
         "status": "healthy",
         "service": "PS-27 Automatic Block Planning Engine",
-        "version": "1.0.0",
+        "version": "2.0.0",
+        "data_contract": "Pydantic v2 (6 Canonical Entities)",
+        "database": "Relational Tables with JSONB Audit Replay",
+        "solver": "Google OR-Tools CP-SAT (Deterministic Seed 42)",
     }
 
 

@@ -60,3 +60,40 @@ export const resetDemo = async () => {
   if (!res.ok) throw new Error("Failed to reset demo");
   return res.json();
 };
+
+// Canonical Contracts & Safeguards API
+export const fetchCanonicalSchemas = async () => {
+  const res = await fetch(`${API_BASE}/contracts/schemas`);
+  if (!res.ok) throw new Error("Failed to fetch schemas");
+  return res.json();
+};
+
+export const fetchTopologyMap = async () => {
+  const res = await fetch(`${API_BASE}/contracts/topology`);
+  if (!res.ok) throw new Error("Failed to fetch topology");
+  return res.json();
+};
+
+export const fetchTrains = async () => {
+  const res = await fetch(`${API_BASE}/contracts/trains`);
+  if (!res.ok) throw new Error("Failed to fetch trains");
+  return res.json();
+};
+
+export const fetchAssets = async () => {
+  const res = await fetch(`${API_BASE}/contracts/assets`);
+  if (!res.ok) throw new Error("Failed to fetch assets");
+  return res.json();
+};
+
+export const fetchCertificates = async () => {
+  const res = await fetch(`${API_BASE}/contracts/certificates`);
+  if (!res.ok) throw new Error("Failed to fetch certificates");
+  return res.json();
+};
+
+export const fetchSafeguards = async () => {
+  const res = await fetch(`${API_BASE}/contracts/safeguards`);
+  if (!res.ok) throw new Error("Failed to fetch safeguards");
+  return res.json();
+};
